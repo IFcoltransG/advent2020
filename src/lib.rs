@@ -137,15 +137,12 @@ fn d3p2(input: &[Vec<bool>]) -> usize {
 }
 
 fn check(input: &[Vec<bool>], num: usize, den: usize) -> usize {
-    let mut location = 0;
-    let mut count = 0;
-    for line in input.iter().step_by(den) {
-        if line[location % line.len()] {
-            count += 1
-        }
-        location += num
-    }
-    return count;
+    input
+        .iter()
+        .step_by(den)
+        .enumerate()
+        .filter(|(i, line)| line[i * num % line.len()])
+        .count()
 }
 
 aoc_lib! {year = 2020}
