@@ -58,7 +58,7 @@ fn _d2g_splits(input: &str) -> Vec<((usize, usize), char, String)> {
 fn d2g_regex(input: &str) -> Vec<((usize, usize), char, String)> {
     //e.g. "3-4 j: hjvj"
     let re =
-        Regex::new(r#"(?P<lower>\d+)-(?P<upper>\d+) (?P<character>[a-z]): (?P<password>[a-z]+)"#)
+        Regex::new(r#"^(?P<lower>\d+)-(?P<upper>\d+) (?P<character>[a-z]): (?P<password>[a-z]+)$"#)
             .unwrap();
     input
         .lines()
