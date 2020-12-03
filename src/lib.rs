@@ -106,4 +106,46 @@ fn d2p2(input: &[((usize, usize), char, String)]) -> usize {
         .clone()
 }
 
+#[aoc_generator(day3)]
+fn d3g(input: &str) -> Vec<Vec<bool>> {
+    input
+        .lines()
+        .map(|line| line.chars().map(|chr| (chr == '#')).collect())
+        .collect()
+}
+
+#[aoc(day3, part1)]
+fn d3p1(input: &[Vec<bool>]) -> usize {
+    let ratio = 3;
+    let mut location = 0;
+    let mut count = 0;
+    for line in input {
+        if line[location % line.len()] {
+            count += 1
+        }
+        location += ratio
+    }
+    return count;
+}
+
+#[aoc(day3, part2)]
+fn d3p2(input: &[Vec<bool>]) -> usize {
+    [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)]
+        .iter()
+        .map(|(num, den)| check(input, *num, *den))
+        .product()
+}
+
+fn check(input: &[Vec<bool>], num: usize, den: usize) -> usize {
+    let mut location = 0;
+    let mut count = 0;
+    for line in input.iter().step_by(den) {
+        if line[location % line.len()] {
+            count += 1
+        }
+        location += num
+    }
+    return count;
+}
+
 aoc_lib! {year = 2020}
