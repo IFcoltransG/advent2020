@@ -1,20 +1,21 @@
 #![feature(str_split_once)]
+
 extern crate aoc_runner;
 #[macro_use]
 extern crate aoc_runner_derive;
-use itertools::Itertools;
+
+use itertools::{iproduct, Itertools};
 use regex::Regex;
 
 #[aoc_generator(day1)]
-fn d1g(input: &str) -> Vec<usize> {
+fn d1g(input: &str) -> Vec<u64> {
     input
         .lines()
-        .map(|line| line.trim().parse().unwrap())
+        .map(|line| line.parse().unwrap())
         .collect()
 }
 
-#[aoc(day1, part1)]
-fn d1p1(input: &[usize]) -> usize {
+fn _d1p1_loop(input: &[u64]) -> u64 {
     for (num1, num2) in input.iter().cartesian_product(input) {
         if num1 + num2 == 2020 {
             return num1 * num2;
@@ -23,8 +24,31 @@ fn d1p1(input: &[usize]) -> usize {
     0
 }
 
-#[aoc(day1, part2)]
-fn d1p2(input: &[usize]) -> usize {
+fn _d1p1_fold(input: &[u64]) -> u64 {
+    input
+        .iter()
+        .cartesian_product(input)
+        .fold(None, |acc, (num1, num2)| {
+            if num1 + num2 == 2020 {
+                Some(num1 * num2)
+            } else {
+                acc
+            }
+        })
+        .unwrap()
+}
+
+#[aoc(day1, part1)]
+fn d1p1_find(input: &[u64]) -> u64 {
+    input
+        .iter()
+        .cartesian_product(input)
+        .find(|(&num1, &num2)| num1 + num2 == 2020)
+        .map(|(num1, num2)| num1 * num2)
+        .unwrap()
+}
+
+fn _d1p2_loop(input: &[u64]) -> u64 {
     for ((num1, num2), num3) in input
         .iter()
         .cartesian_product(input)
@@ -35,6 +59,14 @@ fn d1p2(input: &[usize]) -> usize {
         }
     }
     0
+}
+
+#[aoc(day1, part2)]
+fn d1p2_find(input: &[u64]) -> u64 {
+    iproduct!(input, input, input)
+        .find(|(&num1, &num2, &num3)| num1 + num2 + num3 == 2020)
+        .map(|(num1, num2, num3)| num1 * num2 * num3)
+        .unwrap()
 }
 
 fn _d2g_splits(input: &str) -> Vec<((usize, usize), char, String)> {
@@ -116,27 +148,18 @@ fn d3g(input: &str) -> Vec<Vec<bool>> {
 
 #[aoc(day3, part1)]
 fn d3p1(input: &[Vec<bool>]) -> usize {
-    let ratio = 3;
-    let mut location = 0;
-    let mut count = 0;
-    for line in input {
-        if line[location % line.len()] {
-            count += 1
-        }
-        location += ratio
-    }
-    return count;
+    check_ratio_d3(input, 3, 1)
 }
 
 #[aoc(day3, part2)]
 fn d3p2(input: &[Vec<bool>]) -> usize {
     [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)]
         .iter()
-        .map(|(num, den)| check(input, *num, *den))
+        .map(|(num, den)| check_ratio_d3(input, *num, *den))
         .product()
 }
 
-fn check(input: &[Vec<bool>], num: usize, den: usize) -> usize {
+fn check_ratio_d3(input: &[Vec<bool>], num: usize, den: usize) -> usize {
     input
         .iter()
         .step_by(den)
