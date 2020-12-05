@@ -6,6 +6,7 @@ extern crate aoc_runner_derive;
 
 use itertools::{iproduct, Itertools};
 use regex::Regex;
+use std::str::FromStr;
 
 #[aoc_generator(day1)]
 fn d1g(input: &str) -> Vec<u64> {
@@ -160,68 +161,42 @@ fn check_ratio_d3(input: &[Vec<bool>], num: usize, den: usize) -> usize {
         .count()
 }
 
-struct Passport {
-    byr: Option<String>,
-    iyr: Option<String>,
-    eyr: Option<String>,
-    hgt: Option<String>,
-    hcl: Option<String>,
-    ecl: Option<String>,
-    pid: Option<String>,
-    cid: Option<String>,
-}
-
 #[aoc_generator(day4)]
-fn d4g(input: &str) -> Vec<Passport> {
+fn d4g(input: &str) -> Vec<Vec<(String, String)>> {
     input
         .split("\n\n")
         .map(|line| {
-            let values = line.split_whitespace().map(|entry| {
-                //println!("{}", entry);
-                let mut values = entry.split(":").into_iter();
-                (
-                    values.next().unwrap().to_string(),
-                    values.next().unwrap().to_string(),
-                )
-            });
-            get_passport(values.collect())
+            line.split_whitespace()
+                .map(|entry| entry.split(":").map(&str::to_string).next_tuple())
+                .flatten()
+                .collect()
         })
         .collect()
 }
 
-fn get_passport(input: Vec<(String, String)>) -> Passport {
-    Passport {
-        byr: get_word(&input, "byr".to_string()),
-        iyr: get_word(&input, "iyr".to_string()),
-        eyr: get_word(&input, "eyr".to_string()),
-        hgt: get_word(&input, "hgt".to_string()),
-        hcl: get_word(&input, "hcl".to_string()),
-        ecl: get_word(&input, "ecl".to_string()),
-        pid: get_word(&input, "pid".to_string()),
-        cid: get_word(&input, "cid".to_string()),
-    }
-}
-
-fn get_word(input: &Vec<(String, String)>, word: String) -> Option<String> {
+fn get_word(input: &Vec<(String, String)>, word: &str) -> Option<String> {
     input
         .into_iter()
         .find(|(key, _)| key == &word)
         .map(|(_, val)| val.clone())
 }
 
+fn get_parsed<F: FromStr>(input: &Vec<(String, String)>, word: &str) -> Option<F> {
+    get_word(input, word)?.parse().ok()
+}
+
 #[aoc(day4, part1)]
-fn d4p1(input: &[Passport]) -> usize {
+fn d4p1(input: &[Vec<(String, String)>]) -> usize {
     input
         .iter()
         .map(|pass| {
-            pass.byr.as_ref()?;
-            pass.iyr.as_ref()?;
-            pass.eyr.as_ref()?;
-            pass.hgt.as_ref()?;
-            pass.hcl.as_ref()?;
-            pass.ecl.as_ref()?;
-            pass.pid.as_ref()?;
-            //pass.cid?;
+            get_word(pass, "byr")?;
+            get_word(pass, "iyr")?;
+            get_word(pass, "eyr")?;
+            get_word(pass, "hgt")?;
+            get_word(pass, "hcl")?;
+            get_word(pass, "ecl")?;
+            get_word(pass, "pid")?;
             Some(())
         })
         .flatten()
@@ -229,44 +204,44 @@ fn d4p1(input: &[Passport]) -> usize {
 }
 
 #[aoc(day4, part2)]
-fn d4p2(input: &[Passport]) -> usize {
+fn d4p2(input: &[Vec<(String, String)>]) -> usize {
     input
         .iter()
-        .map(|pass| {
-            if (1920..=2002).contains(&pass.byr.as_ref()?.parse::<i32>().ok()?) &&
-            (2010..=2020).contains(&pass.iyr.as_ref()?.parse::<i32>().ok()?) &&
-            (2020..=2030).contains(&pass.eyr.as_ref()?.parse::<i32>().ok()?) {} else {return None}
-            let hgt = pass.hgt.as_ref()?;
-            if (hgt.ends_with("cm")
-                && (150..=193).contains(&hgt.trim_end_matches("cm").parse::<i32>().ok()?))
-                || (hgt.ends_with("in")
-                    && (59..=76).contains(&hgt.trim_end_matches("in").parse::<i32>().ok()?))
+        .filter(|passport| {
+            if !((1920..=2002).contains(&get_parsed::<u32>(passport, "byr").unwrap_or(0))
+                && (2010..=2020).contains(&get_parsed::<u32>(passport, "iyr").unwrap_or(0))
+                && (2020..=2030).contains(&get_parsed::<u32>(passport, "eyr").unwrap_or(0)))
             {
-            } else {
-                return None;
+                return false;
             }
-            let (mut hcl1, hcl2) = pass.hcl.as_ref()?.chars().tee();
-            if hcl1.next()? != '#' {
-                return None;
+            let hgt = get_word(passport, "hgt").unwrap_or("".to_string());
+            if !((hgt.ends_with("cm")
+                && (150..=193).contains(&hgt.trim_end_matches("cm").parse::<u32>().unwrap_or(0)))
+                || (hgt.ends_with("in")
+                    && (59..=76).contains(&hgt.trim_end_matches("in").parse::<u32>().unwrap_or(0))))
+            {
+                return false;
             }
-            let (hcl3, mut hcl4) = hcl2.skip(1).tee();
-            if hcl3.count() != 6 {
-                return None;
+
+            match get_word(passport, "hcl") {
+                None => return false,
+                Some(word) => {
+                    if Regex::new(r#"^#[\da-z]{6}$"#)
+                        .unwrap()
+                        .captures(&word)
+                        .is_none()
+                    {
+                        return false;
+                    }
+                }
             }
-            if hcl4.any(|character| !"0123456789abcdef".contains(character)) {
-                return None;
-            }
-            if !["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&pass.ecl.as_ref()?) {
-                return None;
+            let ecl = get_word(passport, "ecl").unwrap_or("".to_string());
+            if !["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&ecl.as_str()) {
+                return false;
             };
-            let pid = &pass.pid.as_ref()?;
-            if !pid.chars().all(|character| character.is_alphanumeric()) || pid.len() != 9 {
-                return None;
-            }
-            //pass.cid?;
-            Some(())
+            let pid = get_word(passport, "pid").unwrap_or("".to_string());
+            pid.chars().all(|character| character.is_alphanumeric()) && pid.len() == 9
         })
-        .flatten()
         .count()
 }
 
