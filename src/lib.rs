@@ -214,15 +214,19 @@ fn d4p2(input: &[Vec<(String, String)>]) -> usize {
             {
                 return false;
             }
-            let hgt = get_word(passport, "hgt").unwrap_or("".to_string());
-            if !((hgt.ends_with("cm")
-                && (150..=193).contains(&hgt.trim_end_matches("cm").parse::<u32>().unwrap_or(0)))
-                || (hgt.ends_with("in")
-                    && (59..=76).contains(&hgt.trim_end_matches("in").parse::<u32>().unwrap_or(0))))
-            {
+            if let Some(hgt) = get_word(passport, "hgt") {
+                if !((hgt.ends_with("cm")
+                    && (150..=193)
+                        .contains(&hgt.trim_end_matches("cm").parse::<u32>().unwrap_or(0)))
+                    || (hgt.ends_with("in")
+                        && (59..=76)
+                            .contains(&hgt.trim_end_matches("in").parse::<u32>().unwrap_or(0))))
+                {
+                    return false;
+                }
+            } else {
                 return false;
-            }
-
+            };
             match get_word(passport, "hcl") {
                 None => return false,
                 Some(word) => {
