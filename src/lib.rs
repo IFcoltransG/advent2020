@@ -281,17 +281,11 @@ fn d5p2(input: &[Vec<bool>]) -> u16 {
                 .fold(0, |number, &bit| (number << 1) + bit as u16)
         })
         .sorted()
-        .into_iter()
-        .coalesce(|prev, curr| {
-            if prev + 1 == curr {
-                Ok(curr)
-            } else {
-                Err((prev, curr))
-            }
-        })
-        .next()
+        .tuple_windows()
+        .peekable()
+        .find(|(current, next)| current + 1 != *next)
+        .map(|(current, _)| current + 1)
         .unwrap_or(0)
-        + 1
 }
 
 aoc_lib! {year = 2020}
