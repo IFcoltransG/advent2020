@@ -208,45 +208,90 @@ fn d4p2(input: &[Vec<(String, String)>]) -> usize {
     input
         .iter()
         .filter(|passport| {
-            if !((1920..=2002).contains(&get_parsed::<u32>(passport, "byr").unwrap_or(0))
-                && (2010..=2020).contains(&get_parsed::<u32>(passport, "iyr").unwrap_or(0))
-                && (2020..=2030).contains(&get_parsed::<u32>(passport, "eyr").unwrap_or(0)))
-            {
-                return false;
-            }
-            if let Some(hgt) = get_word(passport, "hgt") {
-                if !((hgt.ends_with("cm")
-                    && (150..=193)
-                        .contains(&hgt.trim_end_matches("cm").parse::<u32>().unwrap_or(0)))
-                    || (hgt.ends_with("in")
-                        && (59..=76)
-                            .contains(&hgt.trim_end_matches("in").parse::<u32>().unwrap_or(0))))
-                {
-                    return false;
-                }
-            } else {
-                return false;
-            };
-            match get_word(passport, "hcl") {
-                None => return false,
-                Some(word) => {
-                    if Regex::new(r#"^#[\da-z]{6}$"#)
+            if let (Some(byr), Some(iyr), Some(eyr), Some(hgt), Some(hcl), Some(ecl), Some(pid)) = (
+                get_parsed::<u32>(passport, "byr"),
+                get_parsed::<u32>(passport, "iyr"),
+                get_parsed::<u32>(passport, "eyr"),
+                get_word(passport, "hgt"),
+                get_word(passport, "hcl"),
+                get_word(passport, "ecl"),
+                get_word(passport, "pid"),
+            ) {
+                [
+                    (1920..=2002).contains(&byr),
+                    (2010..=2020).contains(&iyr),
+                    (2020..=2030).contains(&eyr),
+                    Regex::new(r#"^#[\da-z]{6}$"#)
                         .unwrap()
-                        .captures(&word)
-                        .is_none()
-                    {
-                        return false;
-                    }
-                }
+                        .captures(&hcl)
+                        .is_some(),
+                    ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&ecl.as_str()),
+                    Regex::new(r#"^\d{9}$"#)
+                        .unwrap()
+                        .captures(&pid.as_str())
+                        .is_some(),
+                    (hgt.ends_with("cm")
+                        && (150..=193)
+                            .contains(&hgt.trim_end_matches("cm").parse::<u32>().unwrap_or(0)))
+                        || (hgt.ends_with("in")
+                            && (59..=76)
+                                .contains(&hgt.trim_end_matches("in").parse::<u32>().unwrap_or(0))),
+                ]
+                .iter()
+                .all(|&x| x)
+            } else {
+                false
             }
-            let ecl = get_word(passport, "ecl").unwrap_or("".to_string());
-            if !["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&ecl.as_str()) {
-                return false;
-            };
-            let pid = get_word(passport, "pid").unwrap_or("".to_string());
-            pid.chars().all(|character| character.is_alphanumeric()) && pid.len() == 9
         })
         .count()
+}
+
+#[aoc_generator(day5)]
+fn d5g(input: &str) -> Vec<Vec<bool>> {
+    input
+        .lines()
+        .map(|line| {
+            line.chars()
+                .map(|character| ['B', 'R'].contains(&character))
+                .collect()
+        })
+        .collect()
+}
+
+#[aoc(day5, part1)]
+fn d5p1(input: &[Vec<bool>]) -> u16 {
+    input
+        .iter()
+        .map(|bool_vec| {
+            bool_vec
+                .iter()
+                .fold(0, |number, &bit| (number << 1) + bit as u16)
+        })
+        .max()
+        .unwrap_or(0)
+}
+
+#[aoc(day5, part2)]
+fn d5p2(input: &[Vec<bool>]) -> u16 {
+    input
+        .iter()
+        .map(|bool_vec| {
+            bool_vec
+                .iter()
+                .fold(0, |number, &bit| (number << 1) + bit as u16)
+        })
+        .sorted()
+        .into_iter()
+        .coalesce(|prev, curr| {
+            if prev + 1 == curr {
+                Ok(curr)
+            } else {
+                Err((prev, curr))
+            }
+        })
+        .next()
+        .unwrap_or(0)
+        + 1
 }
 
 aoc_lib! {year = 2020}
