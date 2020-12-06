@@ -287,4 +287,43 @@ fn d5p2(input: &[Vec<bool>]) -> u16 {
         .unwrap_or(0)
 }
 
+#[aoc_generator(day6)]
+fn d6g(input: &str) -> Vec<Vec<u32>> {
+    input
+        .split("\n\n")
+        .map(|group| {
+            group
+                .split_whitespace()
+                .map(|person| {
+                    person
+                        .chars()
+                        .fold(0, |set, character| set | char_to_mask(character))
+                })
+                .collect()
+        })
+        .collect()
+}
+
+fn char_to_mask(input: char) -> u32 {
+    //finds the index n in the lowercase alphabet, and returns a 1-hot binary
+    //number with the nth least significant bit set
+    1 << (input as u32 - 'a' as u32)
+}
+
+#[aoc(day6, part1)]
+fn d6p1(input: &[Vec<u32>]) -> u32 {
+    input
+        .iter()
+        .map(|group| group.iter().fold(0, |set, person| person | set).count_ones())
+        .sum()
+}
+
+#[aoc(day6, part2)]
+fn d6p2(input: &[Vec<u32>]) -> u32 {
+    input
+        .iter()
+        .map(|group| group.iter().fold(u32::MAX, |set, person| person & set).count_ones())
+        .sum()
+}
+
 aoc_lib! {year = 2020}
