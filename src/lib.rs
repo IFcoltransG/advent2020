@@ -282,7 +282,6 @@ fn d5p2(input: &[Vec<bool>]) -> u16 {
         })
         .sorted()
         .tuple_windows()
-        .peekable()
         .find(|(current, next)| current + 1 != *next)
         .map(|(current, _)| current + 1)
         .unwrap_or(0)
