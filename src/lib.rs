@@ -6,6 +6,7 @@ extern crate aoc_runner_derive;
 
 use itertools::{iproduct, Itertools};
 use regex::Regex;
+use std::collections::HashSet;
 use std::str::FromStr;
 
 #[aoc_generator(day1)]
@@ -14,7 +15,7 @@ fn d1g(input: &str) -> Vec<u64> {
 }
 
 fn _d1p1_loop(input: &[u64]) -> u64 {
-    for (num1, num2) in input.iter().cartesian_product(input) {
+    for (num1, num2) in input.into_iter().cartesian_product(input) {
         if num1 + num2 == 2020 {
             return num1 * num2;
         }
@@ -24,7 +25,7 @@ fn _d1p1_loop(input: &[u64]) -> u64 {
 
 fn _d1p1_fold(input: &[u64]) -> u64 {
     input
-        .iter()
+        .into_iter()
         .cartesian_product(input)
         .fold(None, |acc, (num1, num2)| {
             if num1 + num2 == 2020 {
@@ -39,7 +40,7 @@ fn _d1p1_fold(input: &[u64]) -> u64 {
 #[aoc(day1, part1)]
 fn d1p1_find(input: &[u64]) -> u64 {
     input
-        .iter()
+        .into_iter()
         .cartesian_product(input)
         .find(|(&num1, &num2)| num1 + num2 == 2020)
         .map(|(num1, num2)| num1 * num2)
@@ -48,7 +49,7 @@ fn d1p1_find(input: &[u64]) -> u64 {
 
 fn _d1p2_loop(input: &[u64]) -> u64 {
     for ((num1, num2), num3) in input
-        .iter()
+        .into_iter()
         .cartesian_product(input)
         .cartesian_product(input)
     {
@@ -111,7 +112,7 @@ fn d2g_regex(input: &str) -> Vec<((usize, usize), char, String)> {
 #[aoc(day2, part1)]
 fn d2p1(input: &[((usize, usize), char, String)]) -> usize {
     input
-        .iter()
+        .into_iter()
         .filter(|((low, high), character, password)| {
             (low..=high).contains(&&password.matches(*character).count())
         })
@@ -122,7 +123,7 @@ fn d2p1(input: &[((usize, usize), char, String)]) -> usize {
 #[aoc(day2, part2)]
 fn d2p2(input: &[((usize, usize), char, String)]) -> usize {
     input
-        .iter()
+        .into_iter()
         .filter(|((first, second), character, password)| {
             (password.chars().nth(*first - 1).unwrap() == *character)
                 != (password.chars().nth(*second - 1).unwrap() == *character)
@@ -154,7 +155,7 @@ fn d3p2(input: &[Vec<bool>]) -> usize {
 
 fn check_ratio_d3(input: &[Vec<bool>], num: usize, den: usize) -> usize {
     input
-        .iter()
+        .into_iter()
         .step_by(den)
         .enumerate()
         .filter(|(i, line)| line[i * num % line.len()])
@@ -188,7 +189,7 @@ fn get_parsed<F: FromStr>(input: &Vec<(String, String)>, word: &str) -> Option<F
 #[aoc(day4, part1)]
 fn d4p1(input: &[Vec<(String, String)>]) -> usize {
     input
-        .iter()
+        .into_iter()
         .map(|pass| {
             get_word(pass, "byr")?;
             get_word(pass, "iyr")?;
@@ -206,7 +207,7 @@ fn d4p1(input: &[Vec<(String, String)>]) -> usize {
 #[aoc(day4, part2)]
 fn d4p2(input: &[Vec<(String, String)>]) -> usize {
     input
-        .iter()
+        .into_iter()
         .filter(|passport| {
             if let (Some(byr), Some(iyr), Some(eyr), Some(hgt), Some(hcl), Some(ecl), Some(pid)) = (
                 get_parsed::<u32>(passport, "byr"),
@@ -261,10 +262,10 @@ fn d5g(input: &str) -> Vec<Vec<bool>> {
 #[aoc(day5, part1)]
 fn d5p1(input: &[Vec<bool>]) -> u16 {
     input
-        .iter()
+        .into_iter()
         .map(|bool_vec| {
             bool_vec
-                .iter()
+                .into_iter()
                 .fold(0, |number, &bit| (number << 1) + bit as u16)
         })
         .max()
@@ -274,10 +275,10 @@ fn d5p1(input: &[Vec<bool>]) -> u16 {
 #[aoc(day5, part2)]
 fn d5p2(input: &[Vec<bool>]) -> u16 {
     input
-        .iter()
+        .into_iter()
         .map(|bool_vec| {
             bool_vec
-                .iter()
+                .into_iter()
                 .fold(0, |number, &bit| (number << 1) + bit as u16)
         })
         .sorted()
@@ -313,17 +314,239 @@ fn char_to_mask(input: char) -> u32 {
 #[aoc(day6, part1)]
 fn d6p1(input: &[Vec<u32>]) -> u32 {
     input
-        .iter()
-        .map(|group| group.iter().fold(0, |set, person| person | set).count_ones())
+        .into_iter()
+        .map(|group| {
+            group
+                .into_iter()
+                .fold(0, |set, person| person | set)
+                .count_ones()
+        })
         .sum()
 }
 
 #[aoc(day6, part2)]
 fn d6p2(input: &[Vec<u32>]) -> u32 {
     input
-        .iter()
-        .map(|group| group.iter().fold(u32::MAX, |set, person| person & set).count_ones())
+        .into_iter()
+        .map(|group| {
+            group
+                .into_iter()
+                .fold(u32::MAX, |set, person| person & set)
+                .count_ones()
+        })
         .sum()
+}
+
+#[aoc_generator(day7)]
+fn d7g(input: &str) -> Vec<(String, Vec<(u64, String)>)> {
+    //light red bags contain 1 bright white bag, 2 muted yellow bags.
+    input
+        .lines()
+        .map(|line| {
+            let (key, value) = line.split(" bags contain ").next_tuple().unwrap();
+            Some((
+                key.to_string(),
+                Regex::new(r"(\d+|no) (\w+ \w+) bags?(?:, |\.)")
+                    .unwrap()
+                    .captures_iter(value)
+                    .map(|cap| (cap[1].parse().unwrap_or(1), cap[2].to_string()))
+                    .collect(),
+            ))
+        })
+        .flatten()
+        .collect()
+}
+
+#[aoc(day7, part1)]
+fn d7p1(_input: &[(String, Vec<(u64, String)>)]) -> String {
+    todo!()
+    /*
+    let mut holdable = HashSet::with_capacity(input.len());
+    //Vec<&str> = ["shiny gold"].into();
+    let mut to_check = HashSet::with_capacity(input.len());//: Vec<&str> = input.into_iter().map(|(key, _)| key.as_str()).collect();
+    while !to_check.is_empty() {
+        let x = to_check.iter().next().unwrap();
+
+    }
+    todo!()*/
+}
+
+#[aoc(day7, part2)]
+fn d7p2(_input: &[(String, Vec<(u64, String)>)]) -> String {
+    todo!()
+}
+
+#[derive(Debug, Clone)]
+enum Op {
+    Nop,
+    Acc,
+    Jmp,
+}
+
+type Instr = (Op, i32);
+
+#[derive(Debug, Clone)]
+struct VM {
+    acc: i32,
+    code: Vec<Instr>,
+    ip: usize,
+}
+
+struct RunningVM(VM);
+
+impl VM {
+    fn with_code(code: Vec<Instr>) -> VM {
+        VM {
+            acc: 0,
+            code,
+            ip: 0,
+        }
+    }
+
+    fn next_ip(&mut self) {
+        self.ip += 1;
+    }
+
+    fn step_code(&mut self) -> bool {
+        if self.ip >= self.code.len() {
+            return false;
+        }
+        match self.code[self.ip] {
+            (Op::Nop, _) => {
+                self.next_ip();
+            }
+            (Op::Acc, value) => {
+                self.acc += value;
+                self.next_ip();
+            }
+            (Op::Jmp, value) => {
+                self.ip += value as usize;
+            }
+        };
+        true
+    }
+}
+
+impl Iterator for RunningVM {
+    type Item = VM;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0.step_code() {
+            Some(self.0.clone())
+        } else {
+            None
+        }
+    }
+}
+
+#[aoc_generator(day8)]
+fn d8g(input: &str) -> Vec<Instr> {
+    parse_asm(input)
+}
+
+fn parse_asm(input: &str) -> Vec<Instr> {
+    input
+        .lines()
+        .map(|line| line.split_whitespace().next_tuple().unwrap())
+        .map(|(fst, snd)| (parse_op(fst).unwrap(), snd.parse().unwrap()))
+        .collect()
+}
+
+fn parse_op(input: &str) -> Option<Op> {
+    match input {
+        "nop" => Some(Op::Nop),
+        "acc" => Some(Op::Acc),
+        "jmp" => Some(Op::Jmp),
+        _ => None,
+    }
+}
+
+#[aoc(day8, part1)]
+fn d8p1(input: &[Instr]) -> i32 {
+    let mut visited = HashSet::with_capacity(input.len());
+    let vm = VM::with_code(input.to_vec());
+    let mut previous = 0;
+    for snapshot in RunningVM(vm) {
+        if !visited.insert(snapshot.ip) {
+            return previous;
+        } else {
+            previous = snapshot.acc;
+        }
+    }
+    0
+}
+
+#[aoc(day8, part2)]
+fn d8p2(input: &[Instr]) -> i32 {
+    let mut index = 0;
+    loop {
+        let mut visited = HashSet::with_capacity(input.len());
+        if index >= input.len() {
+            panic!("Not found!")
+        }
+        match toggle_jmp_nop_command(input.clone().to_vec(), index) {
+            Some(toggled) => {
+                let mut last_snapshot_acc = None;
+                let mut found = true;
+                'inner: for snapshot in RunningVM(VM::with_code(toggled)) {
+                    if !visited.insert(snapshot.ip) {
+                        found = false;
+                        break 'inner;
+                    }
+                    last_snapshot_acc = Some(snapshot.acc);
+                }
+                if found {
+                    return last_snapshot_acc.unwrap();
+                }
+            }
+            _ => {}
+        }
+        index += 1;
+    }
+}
+
+fn toggle_jmp_nop_command(mut input: Vec<Instr>, index: usize) -> Option<Vec<Instr>> {
+    match input[index] {
+        (Op::Jmp, x) => {
+            input[index] = (Op::Nop, x);
+            Some(input)
+        }
+        (Op::Nop, x) => {
+            input[index] = (Op::Jmp, x);
+            Some(input)
+        }
+        _ => None,
+    }
+}
+
+#[aoc_generator(day9)]
+fn d9g(input: &str) -> Vec<u32> {
+    input.lines().map(|line| line.parse()).flatten().collect()
+}
+
+#[aoc(day9, part1)]
+fn d9p1(input: &[u32]) -> u32 {
+    input
+        .windows(26)
+        .find(|window| !is_pairwise_sum_from(&window[..25], window[25]))
+        .unwrap()[25]
+}
+
+#[aoc(day9, part2)]
+fn d9p2(input: &[u32]) -> u32 {
+    let target = d9p1(input);
+    let mut sums = input.iter().collect::<Vec<_>>();
+    for offset in 1..=input.len() {
+        sums = sums.iter().map(|&sum| Some(sum)).flatten().collect()
+    }
+    todo!()
+}
+
+fn is_pairwise_sum_from(population: &[u32], target: u32) -> bool {
+    population
+        .iter()
+        .tuple_combinations()
+        .find(|(&x, &y)| target == x + y)
+        .is_some()
 }
 
 aoc_lib! {year = 2020}
